@@ -13,23 +13,77 @@ local DIALOG_LIMIT = 25
 
 function init() 
     CLIENT = {
-        ASTRONAUT = { START = 0 },
-        ALIEN = { OFFENDED = 0 },
-        CYBORG = { }
+        ASTRONAUT = { START = 00, BATTLE = 01 },
+        ALIEN = { OFFENDED = 10, DINNER = 11, MARRIAGE = 12 },
+        CYBORG = { ADVICE = 20, SAD = 21, BATTLE_AGGRO = 22, BATTLE_CALM = 23 }
+    }
+    
+    -- BATTLE_CA means astronaut was CALM and cyborg was AGGRO.
+    ENDING = {
+        SABOTAGE = 100, THREAT = 101, CONFORMED = 102, 
+        BATTLE_CA = 103, BATTLE_AC = 104, BATTLE_CC = 105, BATTLE_AA = 106
     }
 
     DRINKS = {
         CALM = { APATHY = 0, COURAGE = 1, RATIONAL = 2 },
-        FURY = { APATHY = 3, COURAGE = 4, RATIONAL = 5 }
+        AGGRO = { APATHY = 3, COURAGE = 4, RATIONAL = 5 }
     }
 
     CURR_STATE = CLIENT.ASTRONAUT.START
 end
 
 function update_state_machine(event)
+    -- First astronaut interaction.
     if (CURR_STATE == CLIENT.ASTRONAUT.START) then
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ALIEN.OFFENDED end
+        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.ALIEN.OFFENDED end
+        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = CLIENT.ALIEN.DINNER end
+        --if (event == DRINKS.AGGRO.APATHY) then SMOETHING end
+        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = CLIENT.ALIEN.MARRIAGE end
+        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.ALIEN.DINNER end
+        --if (event == DRINKS.CALM.APATHY) then SMOETHING end
+
+    elseif (CURR_STATE == CLIENT.ALIEN.OFFENDED) then
+        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.CYBORG.ADVICE end
+        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = CLIENT.CYBORG.ADVICE end
+        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = CLIENT.CYBORG.ADVICE end
+        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = CLIENT.CYBORG.SAD end
+        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.CYBORG.SAD end
+        if (event == DRINKS.CALM.APATHY) then CURR_STATE = CLIENT.CYBORG.ADVICE end
+
+    elseif (CURR_STATE == CLIENT.CYBORG.SAD) then
+        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.ASTRONAUT.BATTLE end
+        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.SABOTAGE end
+        --if (event == DRINKS.AGGRO.APATHY) then SOMETHJING end
+        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.THREAT end
+        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.CONFORMED end
+        --if (event == DRINKS.CALM.APATHY) then SOMETHING end
+
+    elseif (CURR_STATE == CLIENT.ASTRONAUT.BATTLE) then
+        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.CYBORG.BATTLE_AGGRO end
+        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = CLIENT.CYBORG.BATTLE_AGGRO end
+        --if (event == DRINKS.AGGRO.APATHY) then SOMETHJING end
+        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = CLIENT.CYBORG.BATTLE_CALM end
+        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.CYBORG.BATTLE_CALM end
+        --if (event == DRINKS.CALM.APATHY) then SOMETHING end
+
+    elseif (CURR_STATE == CLIENT.CYBORG.BATTLE_AGGRO) then
+        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = ENDING.BATTLE_AA end
+        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.BATTLE_AA end
+        --if (event == DRINKS.AGGRO.APATHY) then SOMETHJING end
+        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.BATTLE_AC end
+        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.BATTLE_AC end
+
+    elseif (CURR_STATE == CLIENT.CYBORG.BATTLE_CALM) then
+        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = ENDING.BATTLE_CA end
+        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.BATTLE_CA end
+        --if (event == DRINKS.AGGRO.APATHY) then SOMETHJING end
+        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.BATTLE_CC end
+        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.BATTLE_CC end
     end
+end
+
+function start_encounter()
+
 end
 
 function scroll_text(text)
