@@ -20,8 +20,9 @@ function init()
     
     -- BATTLE_CA means astronaut was CALM and cyborg was AGGRO.
     ENDING = {
-        SABOTAGE = 100, THREAT = 101, CONFORMED = 102, 
-        BATTLE_CA = 103, BATTLE_AC = 104, BATTLE_CC = 105, BATTLE_AA = 106
+        SABOTAGE = 100, THREAT = 101, CONFORMED = 102,
+        BATTLE_CA = 103, BATTLE_AC = 104, BATTLE_CC = 105, BATTLE_AA = 106,
+        NOTHING = 107, MARRIED = 108, BARTENDER_QUITS = 109, LGBTQ = 110, GENOCIDE = 111
     }
 
     DRINKS = {
@@ -36,11 +37,11 @@ function update_state_machine(event)
     -- First astronaut interaction.
     if (CURR_STATE == CLIENT.ASTRONAUT.START) then
         if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.ALIEN.OFFENDED end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = CLIENT.ALIEN.DINNER end
-        --if (event == DRINKS.AGGRO.APATHY) then SMOETHING end
+        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = CLIENT.ALIEN.MARRIAGE end
+        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.NOTHING end
         if (event == DRINKS.CALM.COURAGE) then CURR_STATE = CLIENT.ALIEN.MARRIAGE end
         if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.ALIEN.DINNER end
-        --if (event == DRINKS.CALM.APATHY) then SMOETHING end
+        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.NOTHING end
 
     elseif (CURR_STATE == CLIENT.ALIEN.OFFENDED) then
         if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.CYBORG.ADVICE end
@@ -50,35 +51,61 @@ function update_state_machine(event)
         if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.CYBORG.SAD end
         if (event == DRINKS.CALM.APATHY) then CURR_STATE = CLIENT.CYBORG.ADVICE end
 
+    elseif (CURR_STATE == CLIENT.ALIEN.MARRIAGE) then
+        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = ENDING.MARRIED end
+        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = CLIENT.CYBORG.ADVICE end
+        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = CLIENT.CYBORG.ADVICE end
+        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.MARRIED end
+        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.CYBORG.ADVICE end
+        if (event == DRINKS.CALM.APATHY) then CURR_STATE = CLIENT.CYBORG.ADVICE end
+
+    elseif (CURR_STATE == CLIENT.ALIEN.DINNER) then
+        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.CYBORG.ADVICE end
+        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.BARTENDER_QUITS end
+        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = CLIENT.CYBORG.SAD end
+        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = CLIENT.CYBORG.SAD end
+        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.CYBORG.SAD end
+        if (event == DRINKS.CALM.APATHY) then CURR_STATE = CLIENT.CYBORG.SAD end
+
+    elseif (CURR_STATE == CLIENT.CYBORG.ADVICE) then
+        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = ENDING.GENOCIDE end
+        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.GENOCIDE end
+        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.CONFORMED end
+        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.LGBTQ end
+        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.CONFORMED end
+        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.CONFORMED end
+
     elseif (CURR_STATE == CLIENT.CYBORG.SAD) then
         if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.ASTRONAUT.BATTLE end
         if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.SABOTAGE end
-        --if (event == DRINKS.AGGRO.APATHY) then SOMETHJING end
+        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.CONFORMED end
         if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.THREAT end
         if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.CONFORMED end
-        --if (event == DRINKS.CALM.APATHY) then SOMETHING end
+        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.CONFORMED end
 
     elseif (CURR_STATE == CLIENT.ASTRONAUT.BATTLE) then
         if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.CYBORG.BATTLE_AGGRO end
         if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = CLIENT.CYBORG.BATTLE_AGGRO end
-        --if (event == DRINKS.AGGRO.APATHY) then SOMETHJING end
+        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = CLIENT.CYBORG.BATTLE_AGGRO end
         if (event == DRINKS.CALM.COURAGE) then CURR_STATE = CLIENT.CYBORG.BATTLE_CALM end
         if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.CYBORG.BATTLE_CALM end
-        --if (event == DRINKS.CALM.APATHY) then SOMETHING end
+        if (event == DRINKS.CALM.APATHY) then CURR_STATE = CLIENT.CYBORG.BATTLE_CALM end
 
     elseif (CURR_STATE == CLIENT.CYBORG.BATTLE_AGGRO) then
         if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = ENDING.BATTLE_AA end
         if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.BATTLE_AA end
-        --if (event == DRINKS.AGGRO.APATHY) then SOMETHJING end
+        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.BATTLE_AA end
         if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.BATTLE_AC end
         if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.BATTLE_AC end
+        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.BATTLE_AC end
 
     elseif (CURR_STATE == CLIENT.CYBORG.BATTLE_CALM) then
         if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = ENDING.BATTLE_CA end
         if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.BATTLE_CA end
-        --if (event == DRINKS.AGGRO.APATHY) then SOMETHJING end
+        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.BATTLE_CA end
         if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.BATTLE_CC end
         if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.BATTLE_CC end
+        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.BATTLE_CC end
     end
 end
 
