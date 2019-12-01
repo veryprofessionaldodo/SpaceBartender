@@ -4,9 +4,9 @@
 -- script: lua
 
 IS_MENU = true
-HAS_FINISHED_WRITING = false
 CURR_EVENT = null
 IS_GOING_TO_DRINK = false
+HAS_FINISHED_WRITING = false 
 
 bartender = {
 	anim_time = 0.8,
@@ -61,7 +61,7 @@ characters = {
 	nothing="nothing"
 }
 
-slide = {
+slide_char = {
 	speed = 0.8,
 	position = 0,
 	value = 0,
@@ -69,6 +69,15 @@ slide = {
 	x = -300,
 	y = 0,
 	max_x = 10
+}
+
+slide_text = {
+	speed = 0.8,
+	position = 0,
+	value = 0,
+	max_y = 300,
+	min_y = 115,
+	y = 120
 }
 
 -- Creates drinks and pushes them to the drinks array.
@@ -300,9 +309,10 @@ function set_variables()
 end
 
 function draw_counter()
-	spr(34,10,100,0,2,0,0,8,2)
-	spr(34,180,100,0,2,0,0,8,2)
-	spr(34,70,100,0,2,0,0,8,2)
+	spr(34,0,100,0,1,0,0,8,2)
+	spr(34,60,100,0,1,0,0,8,2)
+	spr(34,180,100,0,1,0,0,8,2)
+	spr(34,120,100,0,1,0,0,8,2)
 end
 
 function init() 
@@ -317,20 +327,30 @@ function change_character(character)
 end
 
 function slide_character_in(character) 
-	slide.speed = math.abs(slide.speed)
-	slide.x = slide.min_x
-	slide.position = 0
-	slide.value = 0
+	slide_char.speed = math.abs(slide_char.speed)
+	slide_char.x = slide_char.min_x
+	slide_char.position = 0
+	slide_char.value = 0
 	if character == characters.ai then 
-		slide.y = 90
-		slide.max_x = 50
+		slide_char.y = 90
+		slide_char.max_x = 50
 	else 
-		slide.max_x = 10
+		slide_char.max_x = 10
 	end
 end
 
 function slide_character_out() 
-	slide.speed = -math.abs(slide.speed)
+	slide_char.speed = -math.abs(slide_char.speed)
+end
+
+function slide_text_out() 
+	HAS_FINISHED_WRITING = true
+	slide_text.speed = -math.abs(slide_text.speed)
+end
+
+function slide_text_in() 
+	HAS_FINISHED_WRITING = false
+	slide_text.speed = math.abs(slide_text.speed)
 end
 
 -- Draw clients.
@@ -339,44 +359,44 @@ function draw_ai()
 	
 	for i = 1, 400 do
 		pix(
-		slide.x+math.cos(i)*radius+math.sin(ai_wave_counter/60+i)*5 + math.sin(ai_wave_counter/60+i),
-		slide.y+math.sin(i)*radius+math.cos(ai_wave_counter/50+i) + math.cos(ai_wave_counter/60+i),7)
+		slide_char.x+math.cos(i)*radius+math.sin(ai_wave_counter/60+i)*5 + math.sin(ai_wave_counter/60+i),
+		slide_char.y+math.sin(i)*radius+math.cos(ai_wave_counter/50+i) + math.cos(ai_wave_counter/60+i),7)
 	end
 	
 	radius = 4*math.sin(ai_wave_counter/30)-2*math.sin(ai_wave_counter/30*5)
 	radius = math.abs(radius) + 3
 	
-	circ(slide.x,slide.y,radius, 7)
+	circ(slide_char.x,slide_char.y,radius, 7)
 	
 	radius = 17
 	
 	for i = 1, 400 do
 		pix(
-		slide.x+math.cos(i)*radius+math.sin(ai_wave_counter/20+i*4),
-		slide.y+math.sin(i)*radius+math.cos(ai_wave_counter/20+i*4),15)
+		slide_char.x+math.cos(i)*radius+math.sin(ai_wave_counter/20+i*4),
+		slide_char.y+math.sin(i)*radius+math.cos(ai_wave_counter/20+i*4),15)
 	end
 	
 end
 
 function draw_astronaut()
-	spr(261,slide.x,10,0,2,0,0,7,9)
+	spr(261,slide_char.x,10,0,2,0,0,7,9)
 end
 
 function draw_alien()
-	spr(389,slide.x,10,0,2,0,0,7,9)
+	spr(389,slide_char.x,10,0,2,0,0,7,9)
 end
 
 function draw_character(character)
 	-- fα(x)=xαxα+(1−x)α
-	if slide.speed < 0 and slide.position > 0 then 
-		slide.position = slide.position + slide.speed / 60
-	elseif slide.speed > 0 and slide.position < 1 then 
-		slide.position = slide.position + slide.speed / 60
+	if slide_char.speed < 0 and slide_char.position > 0 then 
+		slide_char.position = slide_char.position + slide_char.speed / 60
+	elseif slide_char.speed > 0 and slide_char.position < 1 then 
+		slide_char.position = slide_char.position + slide_char.speed / 60
 	end
 
-	slide.value = math.pow(slide.position,2)/(math.pow(slide.position,2) + math.pow(1-slide.position, 2))
+	slide_char.value = math.pow(slide_char.position,2)/(math.pow(slide_char.position,2) + math.pow(1-slide_char.position, 2))
 	 
-	slide.x = slide.min_x + slide.value * (slide.max_x - slide.min_x)
+	slide_char.x = slide_char.min_x + slide_char.value * (slide_char.max_x - slide_char.min_x)
 
 	if character == characters.ai then draw_ai() end
 	if character == characters.astronaut then draw_astronaut() end
@@ -424,13 +444,27 @@ function handle_input()
 			
 			CURR_EVENT = get_drink_state(selected_drink.base, selected_drink.reaction)
 			-- Transition State
-			HAS_FINISHED_WRITING = false
+			slide_text_in()
+			slide_text_in()
 			update_state_machine(CURR_EVENT)
         end
     end
 end
 
 function draw_dialog(text)
+	if slide_text.speed < 0 and slide_text.position > 0 then 
+		slide_text.position = slide_text.position + slide_text.speed / 60
+	elseif slide_text.speed > 0 and slide_text.position < 1 then 
+		slide_text.position = slide_text.position + slide_text.speed / 60
+	end
+
+	slide_text.value = math.pow(slide_text.position,2)/(math.pow(slide_text.position,2) + math.pow(1-slide_text.position, 2))
+	 
+	slide_text.y = slide_text.max_y - slide_text.value * (slide_text.max_y - slide_text.min_y)
+
+	spr(176,5,slide_text.y -9 ,0,2,0,0,15,3)
+    
+
 	local dummy = 0
 	for sentence in string.gmatch(text, "[^;]+") do
 		dummy = dummy + 1
@@ -440,7 +474,7 @@ function draw_dialog(text)
 	if (CURR_SENTENCE == dummy + 1) then 
 		CURR_SENTENCE = 1 
 		TEXT_FEED = ""
-		HAS_FINISHED_WRITING = true
+		slide_text_out()
 		
 		if IS_GOING_TO_DRINK then
 			IS_GOING_TO_DRINK = false
@@ -464,14 +498,13 @@ function draw_sentence(text)
 		CURR_SENTENCE = CURR_SENTENCE + 1
 		dialog_index = 0
 	end
-	
-    for i = 1, dialog_index do
-        local line = math.ceil(dialog_index / DIALOG_LIMIT)
-
-        for j = 1, line do
+	for i = 1, dialog_index do
+		local line = math.ceil(dialog_index / DIALOG_LIMIT)
+		
+	    for j = 1, line do
             local line_i
             if i >= j * DIALOG_LIMIT then line_i = DIALOG_LIMIT else line_i = i end
-            print(text:sub(DIALOG_LIMIT * (j-1), line_i - 1), x_pos, y_pos + (j-1)*8)
+            print(text:sub(DIALOG_LIMIT * (j-1), line_i - 1), x_pos, slide_text.y + (j-1)*8)
         end
 	end
 end
@@ -527,6 +560,7 @@ function draw()
 	draw_character(CURR_CLIENT)
 
 	draw_dialog(TEXT_FEED)
+
 end
 
 init()
@@ -547,8 +581,6 @@ end
 
 -- State Machine
 
--- State Machine
-
 function update_state_machine(event)
 
 	if (CURR_STATE == CLIENT.ASTRONAUT.START) then
@@ -560,7 +592,7 @@ function update_state_machine(event)
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = CLIENT.ALIEN.OFFENDED
 				CURR_EVENT = TRANSITIONS.ONE_NIGHT_STAND
-				HAS_FINISHED_WRITING = false
+				slide_text_in()
 			end
 		end
 
@@ -572,7 +604,7 @@ function update_state_machine(event)
 
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = CLIENT.ALIEN.MARRIAGE
-				HAS_FINISHED_WRITING = false
+				slide_text_in()
 				CURR_EVENT = TRANSITIONS.MARRIAGE_PROPOSAL
 			end			
 		end
@@ -591,7 +623,7 @@ function update_state_machine(event)
 
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = CLIENT.ALIEN.DINNER
-				HAS_FINISHED_WRITING = false
+				slide_text_in()
 				CURR_EVENT = TRANSITIONS.DINNER_PROPOSAL
 			end
 		end
@@ -600,6 +632,7 @@ function update_state_machine(event)
 		if (event == TRANSITIONS.ONE_NIGHT_STAND) then
 			CURR_EVENT = 999
 			change_character(characters.alien)
+			slide_text_in()
 			TEXT_FEED = "Everything was quiet, until a new customer burst into the bar;, addressing the bartender before she even reached the counter.;'Just give me a drink! Anything really!;Maybe then I'll know how to respond to those preposterous messages!;The nerve of some humans these days!'"
 			IS_GOING_TO_DRINK = true
 		end
@@ -618,7 +651,7 @@ function update_state_machine(event)
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = CLIENT.AI.ADVICE
 				CURR_EVENT = TRANSITIONS.ALIEN_NO
-				HAS_FINISHED_WRITING = false
+				slide_text_in()
 			end
 		end
 
@@ -630,7 +663,7 @@ function update_state_machine(event)
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = CLIENT.AI.ADVICE
 				CURR_EVENT = TRANSITIONS.ALIEN_IGNORES_ASS
-				HAS_FINISHED_WRITING = false
+				slide_text_in()
 			end
 		
 		end
@@ -643,7 +676,7 @@ function update_state_machine(event)
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = CLIENT.AI.SAD
 				CURR_EVENT = TRANSITIONS.IMMA_DO_IT
-				HAS_FINISHED_WRITING = false
+				slide_text_in()
 			end
 		end
 
@@ -656,6 +689,7 @@ function update_state_machine(event)
 
 		if (event == TRANSITIONS.MARRIAGE_PROPOSAL) then
 			CURR_EVENT = 999
+			slide_text_in()
 			change_character(characters.alien)
 			IS_GOING_TO_DRINK = true
 			TEXT_FEED = "A new customer approaches, mumbling something to herself. ;She clearly looks frustrated.;'Greetings', she says, quietly, but politely.;Something was troubling her.;Fortunately for her...;The bartender is trained to understand the customer's deepest desire"
@@ -669,7 +703,7 @@ function update_state_machine(event)
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = CLIENT.AI.ADVICE
 				CURR_EVENT = TRANSITIONS.FATHER_DISAPPROVAL
-				HAS_FINISHED_WRITING = false
+				slide_text_in()
 			end
 		end
 
@@ -696,7 +730,7 @@ function update_state_machine(event)
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = CLIENT.AI.ADVICE
 				CURR_EVENT = TRANSITIONS.NAKED_ALIEN
-				HAS_FINISHED_WRITING = false
+				slide_text_in()
 			end
 		end
 
@@ -714,7 +748,7 @@ function update_state_machine(event)
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = CLIENT.AI.SAD
 				CURR_EVENT = TRANSITIONS.NICE_DINNER
-				HAS_FINISHED_WRITING = false
+				slide_text_in()
 			end
 		end
 
@@ -733,7 +767,7 @@ function update_state_machine(event)
 			end
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = ENDING.GENOCIDE
-				HAS_FINISHED_WRITING = false
+				slide_text_in()
 			end
 
 		end
@@ -745,7 +779,7 @@ function update_state_machine(event)
 			end
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = ENDING.CONFORMED
-				HAS_FINISHED_WRITING = false
+				slide_text_in()
 			end
 			
 		end
@@ -757,7 +791,7 @@ function update_state_machine(event)
 			end
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = ENDING.LGBTQ
-				HAS_FINISHED_WRITING = false
+				slide_text_in()
 			end
 		end
 
@@ -780,7 +814,7 @@ function update_state_machine(event)
 			end
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = ENDING.SABOTAGE
-				HAS_FINISHED_WRITING = false
+				slide_text_in()
 			end  
 		end
 
@@ -791,7 +825,7 @@ function update_state_machine(event)
 			end
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = ENDING.THREAT
-				HAS_FINISHED_WRITING = false
+				slide_text_in()
 			end 
 		end
 
@@ -802,7 +836,7 @@ function update_state_machine(event)
 			end
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = ENDING.CONFORMED
-				HAS_FINISHED_WRITING = false
+				slide_text_in()
 			end
 		end
 
