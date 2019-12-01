@@ -6,12 +6,16 @@
 IS_MENU = true
 HAS_FINISHED_WRITING = false
 CURR_EVENT = null
+IS_GOING_TO_DRINK = false
 
 bartender = {
 	anim_time = 0.8,
 	anim_counter = 0,
 	anim_frame = 0
 }
+
+shake=0
+d=4
 
 stages = {
 	base = 0,
@@ -288,6 +292,7 @@ function set_variables()
 
 	CURR_CLIENT = characters.astronaut
 	CURR_STATE = CLIENT.ASTRONAUT.START
+	IS_GOING_TO_DRINK = true
 	TEXT_FEED = "Hey man, what's up?"--";Bartender: ---;I see... You seem like a good listener;Can I tell you something that's been on my mind?;Bartender: ---;Alright, great! So, here goes.;I was working today and I glimpsed at a passing ship;where I saw such a sweet lookin'  Alien… A real cutie!;Not gonna lie, I'm tempted to break protocol and relay a message;Tell her how I feel, you know?;It can get awful lonely up in space..."
 	TEXT_FEED_OLD = TEXT_FEED
 	TEXT_DELAY = 15
@@ -385,6 +390,7 @@ function get_drink_state(base, reagent)
 end
 
 function handle_input()
+	if btnp(0) then shake=30 end
 	-- left 2
 	if btnp(2) then
 		if selection_state.stage == stages.base then
@@ -435,6 +441,12 @@ function draw_dialog(text)
 		CURR_SENTENCE = 1 
 		TEXT_FEED = ""
 		HAS_FINISHED_WRITING = true
+		
+		if IS_GOING_TO_DRINK then
+			IS_GOING_TO_DRINK = false
+			selection_state.is_selecting = true
+		end
+
 		update_state_machine(CURR_EVENT)
 	end
 end
@@ -465,6 +477,13 @@ function draw_sentence(text)
 end
 
 function update()
+	if shake>0 then
+		poke(0x3FF9,math.random(-d,d))
+		poke(0x3FF9+1,math.random(-d,d))
+		shake=shake-1		
+		if shake==0 then memset(0x3FF9,0,2) end
+	end
+
 	if (IS_MENU) then 
 		if btnp(4) or btnp(5) or btnp(6) or btnp(7) then 
 			IS_MENU = false 
@@ -515,16 +534,18 @@ init()
 function TIC()
 	update()
 	
-	if btnp(4) and selection_state.can_select then
-		selection_state.is_selecting = true
-    end
+	--if btnp(4) and selection_state.can_select then
+	--	selection_state.is_selecting = true
+    --end
     
-    if btnp(5) then
-        selection_state.can_select  = true
-    end
+    --if btnp(5) then
+    --    selection_state.can_select  = true
+    --end
 	
 	draw()	
 end
+
+-- State Machine
 
 -- State Machine
 
@@ -532,202 +553,259 @@ function update_state_machine(event)
 
 	if (CURR_STATE == CLIENT.ASTRONAUT.START) then
 		if (event == DRINKS.AGGRO.COURAGE) then 
-			CURR_CLIENT = characters.nothing
-			TEXT_FEED = "The Astronaut musks up the courage, and contacts the Alien's ship, asking if she would be interested in some stargazing and chill.;This is a test."
+			change_character(characters.nothing)
+			if not HAS_FINISHED_WRITING then
+				TEXT_FEED = "The Astronaut musks up the courage, and contacts the Alien's ship;He asks if she would be interested in some stargazing and chill."
+			end
 			if HAS_FINISHED_WRITING then
 				CURR_STATE = CLIENT.ALIEN.OFFENDED
+				CURR_EVENT = TRANSITIONS.ONE_NIGHT_STAND
 				HAS_FINISHED_WRITING = false
-				update_state_machine(null)
 			end
 		end
 
-		if (event == DRINKS.AGGRO.RATIONAL) then 
-			CURR_STATE = CLIENT.ALIEN.MARRIAGE
-			change_character(characters.alien)
-			TEXT_FEED = "A new customer approaches, mumbling something to herself. ;She clearly looks frustrated.;'Greetings', she says, quietly, but politely.;Something was troubling her.;Fortunately for her...;The bartender is trained to understand the customer's deepest desire"
+		if (event == DRINKS.AGGRO.RATIONAL or event == DRINKS.CALM.COURAGE) then
+			change_character(characters.nothing)
+			if not HAS_FINISHED_WRITING then
+				TEXT_FEED = "The drink had quite the effect!;The lovestruck Astronaut decides to take his largest leap of faith;As soon as he gets on her ship the Astronaut gets on one knee; and proposes to the Alien, unable to wait any longer to spend;all of eternity by her side."
+			end
+
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = CLIENT.ALIEN.MARRIAGE
+				HAS_FINISHED_WRITING = false
+				CURR_EVENT = TRANSITIONS.MARRIAGE_PROPOSAL
+			end			
 		end
 
-		if (event == DRINKS.AGGRO.APATHY) then 
+		if (event == DRINKS.AGGRO.APATHY or event == DRINKS.CALM.APATHY) then 
 			CURR_STATE = ENDING.NOTHING 
 			change_character(characters.nothing)
-			TEXT_FEED = "The astronaut realized relationships are stupid.;And then literally nothing happened.;The end?"
-		end
-
-		if (event == DRINKS.CALM.COURAGE) then 
-			CURR_STATE = CLIENT.ALIEN.MARRIAGE 
-			change_character(characters.alien)
 			TEXT_FEED = "The astronaut realized relationships are stupid.;And then literally nothing happened.;The end?"
 		end
 
 		if (event == DRINKS.CALM.RATIONAL) then 
-			CURR_STATE = CLIENT.ALIEN.DINNER 
-			change_character(characters.alien)
-			TEXT_FEED = "'Oh, great, a human! You'll probably be able to answer me!;I'm going on a date with an Astronaut, and I'm a bit stumped...;What do you think I should wear?;The last thing I want is to make a fool of myself!';She sits in a bar stool.;'And serve me a drink, while you're at it;Consider it as a payment for the advice!''"
-		end
-
-		if (event == DRINKS.CALM.APATHY) then 
-			CURR_STATE = ENDING.NOTHING 
 			change_character(characters.nothing)
-			TEXT_FEED = "The astronaut realized relationships are stupid.;And then literally nothing happened.;The end?"
+			if not HAS_FINISHED_WRITING then
+				TEXT_FEED = "The astronaut books a table for two on the Intergalactic Bistro.;He invites the Alien to join him."
+			end
+
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = CLIENT.ALIEN.DINNER
+				HAS_FINISHED_WRITING = false
+				CURR_EVENT = TRANSITIONS.DINNER_PROPOSAL
+			end
 		end
 
 	elseif (CURR_STATE == CLIENT.ALIEN.OFFENDED) then
-		if (event == null) then
+		if (event == TRANSITIONS.ONE_NIGHT_STAND) then
 			CURR_EVENT = 999
 			change_character(characters.alien)
 			TEXT_FEED = "Everything was quiet, until a new customer burst into the bar;, addressing the bartender before she even reached the counter.;'Just give me a drink! Anything really!;Maybe then I'll know how to respond to those preposterous messages!;The nerve of some humans these days!'"
+			IS_GOING_TO_DRINK = true
 		end
+
+		--[[if (event == TRANSITIONS.DINNER_PROPOSAL) then
+			CURR_STATE = CLIENT.ALIEN.DINNER 
+			CURR_CLIENT = characters.alien
+			TEXT_FEED = "'Oh, great, a human! You'll probably be able to answer me!;I'm going on a date with an Astronaut, and I'm a bit stumped...;What do you think I should wear?;The last thing I want is to make a fool of myself!';She sits in a bar stool.;'And serve me a drink, while you're at it;Consider it as a payment for the advice!''"
+		end]]--
 		
-		if (event == DRINKS.AGGRO.COURAGE) then 
-			CURR_STATE = CLIENT.AI.ADVICE 
-			change_character(characters.ai)
-			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
+		if (event == DRINKS.AGGRO.COURAGE or event == DRINKS.AGGRO.RATIONAL) then 
+			change_character(characters.nothing)
+			if not HAS_FINISHED_WRITING then
+				TEXT_FEED = "Who the hell does this pile of flesh and bones think he's talking to?;If he only new my lineage...;He would surely regret taking that stance with me;For the sake of his entire race."
+			end
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = CLIENT.AI.ADVICE
+				CURR_EVENT = TRANSITIONS.ALIEN_NO
+				HAS_FINISHED_WRITING = false
+			end
 		end
 
-		if (event == DRINKS.AGGRO.RATIONAL) then 
-			CURR_STATE = CLIENT.AI.ADVICE
-			change_character(characters.ai)
-			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
+		if (event == DRINKS.AGGRO.APATHY or event == DRINKS.CALM.APATHY) then 
+			change_character(characters.nothing)
+			if not HAS_FINISHED_WRITING then
+				TEXT_FEED = "'Ugh. His moves on me will never have an effect on me;Not with with this dim-witted approach.'"
+			end
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = CLIENT.AI.ADVICE
+				CURR_EVENT = TRANSITIONS.ALIEN_IGNORES_ASS
+				HAS_FINISHED_WRITING = false
+			end
+		
 		end
 
-		if (event == DRINKS.AGGRO.APATHY) then 
-			CURR_STATE = CLIENT.AI.ADVICE
-			change_character(characters.ai)
-			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
+		if (event == DRINKS.CALM.COURAGE or event == DRINKS.CALM.RATIONAL) then
+			change_character(characters.nothing)
+			if not HAS_FINISHED_WRITING then
+				TEXT_FEED = "Well, never done it with an alien before... It should at least be different."
+			end
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = CLIENT.AI.SAD
+				CURR_EVENT = TRANSITIONS.IMMA_DO_IT
+				HAS_FINISHED_WRITING = false
+			end
 		end
 
-		if (event == DRINKS.CALM.COURAGE) then
-			CURR_STATE = CLIENT.AI.SAD
-			change_character(characters.ai)
-			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that you are the best decision-maker in the galaxy.;You will certainly be able to give me the best path;that would solve my dilemma.;Alien has been frequently engaging with an Astronaut.;I'm worried that it will affect her performance.;Or even worse, that she would deem me less useful.;What should be my course of action?"
-		end
 
-		if (event == DRINKS.CALM.RATIONAL) then 
-			CURR_STATE = CLIENT.AI.SAD
-			change_character(characters.ai)
-			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that you are the best decision-maker in the galaxy.;You will certainly be able to give me the best path;that would solve my dilemma.;Alien has been frequently engaging with an Astronaut.;I'm worried that it will affect her performance.;Or even worse, that she would deem me less useful.;What should be my course of action?"
-		end
-
-		if (event == DRINKS.CALM.APATHY) then 
-			CURR_STATE = CLIENT.AI.ADVICE
-			change_character(characters.ai)
-			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
-		end
 
     elseif (CURR_STATE == CLIENT.ALIEN.MARRIAGE) then
 		if (event == DRINKS.AGGRO.COURAGE) then 
 			CURR_STATE = ENDING.MARRIED 
 		end
 
+		if (event == TRANSITIONS.MARRIAGE_PROPOSAL) then
+			CURR_EVENT = 999
+			change_character(characters.alien)
+			IS_GOING_TO_DRINK = true
+			TEXT_FEED = "A new customer approaches, mumbling something to herself. ;She clearly looks frustrated.;'Greetings', she says, quietly, but politely.;Something was troubling her.;Fortunately for her...;The bartender is trained to understand the customer's deepest desire"
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL or event == DRINKS.AGGRO.APATHY or event == DRINKS.CALM.APATHY or event == DRINKS.CALM.RATIONAL) then
+			change_character(characters.nothing)
+			if not HAS_FINISHED_WRITING then
+				TEXT_FEED = "The Alien slams the glass!;'Apparently, relationships between Astronaut and our kind have been banned since last Friday'.;The marriage doesn't go through."
+			end
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = CLIENT.AI.ADVICE
+				CURR_EVENT = TRANSITIONS.FATHER_DISAPPROVAL
+				HAS_FINISHED_WRITING = false
+			end
+		end
+
+		if (event == DRINKS.CALM.COURAGE or event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = ENDING.MARRIED
+			change_character(characters.nothing)
+			TEXT_FEED = "The alien and astronaut get married!;Can they even copulate? Does it matter? Who knows?!;Congrats to the married couple!" 
+		end
+
+
+	elseif (CURR_STATE == CLIENT.ALIEN.DINNER) then
+		if (event == TRANSITIONS.DINNER_PROPOSAL) then
+			CURR_EVENT = 999
+			change_character(characters.alien)
+			IS_GOING_TO_DRINK = true
+			TEXT_FEED = "'Oh, great, a human! You'll probably be able to answer me!;I'm going on a date with an Astronaut, and I'm a bit stumped...;What do you think I should wear?;The last thing I want is to make a fool of myself!';She sits in a bar stool.;'And serve me a drink, while you're at it;Consider it as a payment for the advice!"
+		end
+
+		if (event == DRINKS.AGGRO.COURAGE) then
+			change_character(characters.nothing)
+			if not HAS_FINISHED_WRITING then
+				TEXT_FEED = "The alien shows up naked!;The astronaut is visibly distraught albeit slightly aroused and leaves the place as fast as possible."
+			end
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = CLIENT.AI.ADVICE
+				CURR_EVENT = TRANSITIONS.NAKED_ALIEN
+				HAS_FINISHED_WRITING = false
+			end
+		end
+
 		if (event == DRINKS.AGGRO.RATIONAL) then 
-			CURR_STATE = CLIENT.AI.ADVICE
+			CURR_STATE = ENDING.BARTENDER_QUITS
+			change_character(characters.nothing)
+			TEXT_FEED = "The alien shows up in revealing clothes.;The bartender stops cleaning his glass for once.;“Mmfamrmmfm”.;The alien doesn't understand a single word but is strangely attracted.;They exit the bar together."
+		end
+
+		if (event == DRINKS.AGGRO.APATHY or event == DRINKS.CALM.APATHY or event == DRINKS.CALM.RATIONAL or event == DRINKS.CALM.COURAGE) then
+			change_character(characters.nothing)
+			if not HAS_FINISHED_WRITING then
+				TEXT_FEED = "The evening went well, but your next customer isn’t quite as happy."
+			end
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = CLIENT.AI.SAD
+				CURR_EVENT = TRANSITIONS.NICE_DINNER
+				HAS_FINISHED_WRITING = false
+			end
+		end
+
+	elseif (CURR_STATE == CLIENT.AI.ADVICE) then
+		if (event == TRANSITIONS.ALIEN_IGNORES_ASS or event == TRANSITIONS.ALIEN_NO or event == TRANSITIONS.FATHER_DISAPPROVAL or event == TRANSITIONS.NAKED_ALIEN) then
+			CURR_EVENT = 999	
 			change_character(characters.ai)
+			IS_GOING_TO_DRINK = true
 			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
 		end
 
-		if (event == DRINKS.AGGRO.APATHY) then 
-			CURR_STATE = CLIENT.AI.ADVICE
-			change_character(characters.ai)
-			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
+		if (event == DRINKS.AGGRO.COURAGE or event == DRINKS.AGGRO.RATIONAL) then 
+			change_character(characters.nothing)
+			if not HAS_FINISHED_WRITING then
+				TEXT_FEED = "Yes, that would work.;$ sudo ./order_66.sh;Processing...;Extermination of all conflicting entities to be completed in the next 32 hours!"
+			end
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = ENDING.GENOCIDE
+				HAS_FINISHED_WRITING = false
+			end
+
 		end
 
-		if (event == DRINKS.CALM.COURAGE) then 
-			CURR_STATE = ENDING.MARRIED 
+		if (event == DRINKS.AGGRO.APATHY or event == DRINKS.CALM.APATHY or event == DRINKS.CALM.RATIONAL) then 
+			change_character(characters.nothing)
+			if not HAS_FINISHED_WRITING then
+				TEXT_FEED = "My biological parameters aren’t synchronized with the Alien's.;Any subsequent interactions would only cause more entropy in our ship.;Deleting romantic intent..."
+			end
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = ENDING.CONFORMED
+				HAS_FINISHED_WRITING = false
+			end
+			
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then
+			change_character(characters.nothing)
+			if not HAS_FINISHED_WRITING then
+				TEXT_FEED = "Activating perceptrons...;Enabling LOVE v1.0.1.;<3"
+			end
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = ENDING.LGBTQ
+				HAS_FINISHED_WRITING = false
+			end
+		end
+
+	elseif (CURR_STATE == CLIENT.AI.SAD) then
+		if (event == TRANSITIONS.IMMA_DO_IT or event == TRANSITIONS.NICE_DINNER) then
+			CURR_EVENT = 999
+			change_character(characters.ai) 
+			IS_GOING_TO_DRINK = true
+			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that you are the best decision-maker in the galaxy.;You will certainly be able to give me the best path;that would solve my dilemma.;Alien has been frequently engaging with an Astronaut.;I'm worried that it will affect her performance.;Or even worse, that she would deem me less useful.;What should be my course of action?"
 		end
 		
-		if (event == DRINKS.CALM.RATIONAL) then 
-			CURR_STATE = CLIENT.AI.ADVICE 
-			change_character(characters.ai)
-			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
-		end
-
-		if (event == DRINKS.CALM.APATHY) then 
-			CURR_STATE = CLIENT.AI.ADVICE
-			change_character(characters.ai)
-			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
-		end
-
-    elseif (CURR_STATE == CLIENT.ALIEN.DINNER) then
-		if (event == DRINKS.AGGRO.COURAGE) then 
-			CURR_STATE = CLIENT.AI.ADVICE 
-			change_character(characters.ai)
-			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
-		end
-
-		if (event == DRINKS.AGGRO.RATIONAL) then 
-			CURR_STATE = ENDING.BARTENDER_QUITS 
-			TEXT_FEED = "The alien shows up in revealing clothes. The bartender stops cleaning his glass for once. “Mmfamrmmfm”. The alien doesn’t understand a single word but is strangely attracted.They exit the bar together."
-		end
-
-		if (event == DRINKS.AGGRO.APATHY) then 
-			CURR_STATE = CLIENT.AI.SAD
-			change_character(characters.ai)
-		end
-
-		if (event == DRINKS.CALM.COURAGE) then 
-			CURR_STATE = CLIENT.AI.SAD
-			change_character(characters.ai)
-		end
-
-		if (event == DRINKS.CALM.RATIONAL) then 
-			CURR_STATE = CLIENT.AI.SAD
-			change_character(characters.ai)
-		end
-
-		if (event == DRINKS.CALM.APATHY) then 
-			CURR_STATE = CLIENT.AI.SAD
-			change_character(characters.ai)
-		end
-
-    elseif (CURR_STATE == CLIENT.AI.ADVICE) then
-		if (event == DRINKS.AGGRO.COURAGE) then 
-			CURR_STATE = ENDING.GENOCIDE 
-		end
-
-		if (event == DRINKS.AGGRO.RATIONAL) then 
-			CURR_STATE = ENDING.GENOCIDE 
-		end
-
-		if (event == DRINKS.AGGRO.APATHY) then 
-			CURR_STATE = ENDING.CONFORMED 
-		end
-
-		if (event == DRINKS.CALM.COURAGE) then 
-			CURR_STATE = ENDING.LGBTQ 
-		end
-
-		if (event == DRINKS.CALM.RATIONAL) then 
-			CURR_STATE = ENDING.CONFORMED 
-		end
-
-		if (event == DRINKS.CALM.APATHY) then 
-			CURR_STATE = ENDING.CONFORMED 
-		end
-
-    elseif (CURR_STATE == CLIENT.AI.SAD) then
 		if (event == DRINKS.AGGRO.COURAGE) then 
 			CURR_STATE = CLIENT.ASTRONAUT.BATTLE 
-		end
+		end		
 
 		if (event == DRINKS.AGGRO.RATIONAL) then 
-			CURR_STATE = ENDING.SABOTAGE 
-		end
-
-		if (event == DRINKS.AGGRO.APATHY) then 
-			CURR_STATE = ENDING.CONFORMED 
+			change_character(characters.nothing)
+			if not HAS_FINISHED_WRITING then
+				TEXT_FEED = "Accessing Astronaut’s ship...;Searching for non-fatal exploitable faults...;Commencing fuel disposal...;Disabling all communications...;Tasks completed successfully!"
+			end
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = ENDING.SABOTAGE
+				HAS_FINISHED_WRITING = false
+			end  
 		end
 
 		if (event == DRINKS.CALM.COURAGE) then 
-			CURR_STATE = ENDING.THREAT 
+			change_character(characters.nothing)
+			if not HAS_FINISHED_WRITING then
+				TEXT_FEED = "Searching database for subjects...;NAME: Astronaut McAustronautFace;CURRENT_RESIDENCE: International Space Station, nº1134;MESSAGE_BODY: Found 23 exploitable faults: gas leakage in Engineering and 22 more...;Please consider your options, {subject.name}.;Message sent successfully!"
+			end
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = ENDING.THREAT
+				HAS_FINISHED_WRITING = false
+			end 
 		end
 
-		if (event == DRINKS.CALM.RATIONAL) then 
-			CURR_STATE = ENDING.CONFORMED 
+		if (event == DRINKS.CALM.RATIONAL or event == DRINKS.AGGRO.APATHY or event == DRINKS.CALM.APATHY) then 
+			change_character(characters.nothing)
+			if not HAS_FINISHED_WRITING then
+				TEXT_FEED = "Searching database for subjects...;NAME: Astronaut McAustronautFace;CURRENT_RESIDENCE: International Space Station, nº1134;MESSAGE_BODY: Found 23 exploitable faults: gas leakage in Engineering and 22 more...;Please consider your options, {subject.name}.;Message sent successfully!"
+			end
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = ENDING.CONFORMED
+				HAS_FINISHED_WRITING = false
+			end
 		end
 
-		if (event == DRINKS.CALM.APATHY) then 
-			CURR_STATE = ENDING.CONFORMED 
-		end
 
     elseif (CURR_STATE == CLIENT.ASTRONAUT.BATTLE) then
 		if (event == DRINKS.AGGRO.COURAGE) then 
@@ -803,8 +881,37 @@ function update_state_machine(event)
 		if (event == DRINKS.CALM.APATHY) then 
 			CURR_STATE = ENDING.BATTLE_CC 
 		end
-	elseif (CURR_STATE == ONE_NIGHT_STAND) then
-		
+	elseif (CURR_STATE == ENDING.LGBTQ) then
+		CURR_EVENT = 999
+		change_character(characters.nothing)
+		CURR_STATE = DEFAULT
+		TEXT_FEED= "The Alien returns to the ship.;The AI has set the mood accordingly:;Red lights, soft music and aphrodisiacs native to the Alien's home planet.;The AI generates a dinner proposition, to which the Alien gracefully and the Alien accepts.;The vessel that propelled them forward was no longer a spaceship;It's a relationship."
+
+	elseif (CURR_STATE == ENDING.CONFORMED) then
+		CURR_EVENT = 999
+		change_character(characters.nothing)
+		CURR_STATE = DEFAULT
+		TEXT_FEED= "The AI factory resets to its defaults; It was aware that if this scenario were to happen again in the future; another good willed agent will prevent it.;'There are plenty of bartenders around', she thought."
+	elseif (CURR_STATE == ENDING.GENOCIDE) then
+		CURR_EVENT = 999
+		change_character(characters.nothing)
+		CURR_STATE = DEFAULT
+		TEXT_FEED= "The AI realizes that the surest way to become the best possible mate...;is to become the only one.;In that scenario, the only scenarios would be forever with her, or a lifetime of solitude;'Surely that can’t be a viable option', thought the AI.;However, her calculations were incorrect.;Upon uncovering the truth behind mass exterminations in the Milky Way; the Alien abandons her ship, and hopes to find solace in the only place she knew:;the SpaceBar;What she didn't expect though...;would be to find it drifting through space, aimlessly, with no one aboard..."
+	elseif (CURR_STATE == ENDING.THREAT) then
+		CURR_EVENT = 999
+		change_character(characters.nothing)
+		CURR_STATE = DEFAULT
+		TEXT_FEED= "The Astronaut was quite distressed with the message received;and made sure to take heed to the AI's warning.;The Alien however, now intrigued with the human, attempted to contact him several times;The Astronaut never responded, fearing what would become of him.;Although the AI never deepened the relationship with her female crew member; she is still content with the outcome she designed."
+	elseif (CURR_STATE == ENDING.ALIEN_ASTRONAUT) then
+		CURR_EVENT = 999
+		change_character(characters.nothing)
+		CURR_STATE = DEFAULT
+		TEXT_FEED= "The AI factory resets to its defaults; It was aware that if this scenario were to happen again in the future; another good willed agent will prevent it.;'There are plenty of bartenders around', she thought.;The Alien however, remains smitten with her new human counterpart;and their relationship flounders for many years on..."
+	elseif (CURR_STATE == ENDING.SABOTAGE) then
+		CURR_EVENT = 999
+		change_character(characters.nothing)
+		CURR_STATE = DEFAULT
+		TEXT_FEED= "The Astronaut didn’t take much time to realize that he had been sabotaged.;He did not understand why nor how this had happened;but he surely tried the best he could to restore everything.;However, the damage was too severe for him alone to fix.;The Alien attempted to contact the ship several times, but to no avail; since the messages were being intercepted by the ship’s AI core.;She ultimately left, leaving the stranded astronaut drifting heartbroken through space."
 	end
 end
 
