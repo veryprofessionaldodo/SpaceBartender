@@ -7,6 +7,9 @@ IS_MENU = true
 HAS_FINISHED_WRITING = false
 CURR_EVENT = null
 
+shake=0
+d=4
+
 bartender = {
 	anim_time = 0.8,
 	anim_counter = 0,
@@ -344,6 +347,7 @@ function get_drink_state(base, reagent)
 end
 
 function handle_input()
+	if btnp(0) then shake=30 end
 	-- left 2
 	if btnp(2) then
 		if selection_state.stage == stages.base then
@@ -422,6 +426,13 @@ function draw_sentence(text)
 end
 
 function update()
+	if shake>0 then
+		poke(0x3FF9,math.random(-d,d))
+		poke(0x3FF9+1,math.random(-d,d))
+		shake=shake-1		
+		if shake==0 then memset(0x3FF9,0,2) end
+	end
+
 	if (IS_MENU) then 
 		if btnp(4) or btnp(5) or btnp(6) or btnp(7) then 
 			IS_MENU = false 
@@ -439,11 +450,14 @@ function update()
 end
 
 function draw_menu()
+	for i=0,(240*136)/2-1 do
+		poke(0x0000+i,(i*i*time())/3000000000%4+1)
+	   end
 	draw_stars()
 	print('SPACEBAR', 30, 30, 7, false, 4, false)
 	print('Also try Terraria!', 30, 52, 15, false, 1, true)
 	draw_specific_bartender(150, 46)
-	print('Press any key to start...', 30, 130, 7, false, 1, true)
+	print('Press any key to start...', 30, 120, 7, false, 1, true)
 end
 
 function draw()
