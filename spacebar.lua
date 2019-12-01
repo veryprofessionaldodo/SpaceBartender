@@ -247,8 +247,10 @@ function set_variables()
 
 	CURR_CLIENT = characters.astronaut
 	CURR_STATE = CLIENT.ASTRONAUT.START
-	TEXT_FEED = "An astronaut enters the bar."
+	TEXT_FEED = "An astronaut enters the bar.;This is another line."
 	TEXT_FEED_OLD = TEXT_FEED
+	TEXT_DELAY = 30
+	CURR_SENTENCE = 1
 end
 
 function init() 
@@ -344,18 +346,31 @@ function handle_input()
     end
 end
 
-function draw_dialog_box(text) 
-	if (text ~= TEXT_FEED_OLD) then 
-		dialog_index = 0 
-		TEXT_FEED_OLD = text
+function draw_dialog(text)
+	local dummy = 0
+	for sentence in string.gmatch(text, "[^;]+") do
+		dummy = dummy + 1
+		if (dummy == CURR_SENTENCE) then draw_sentence(sentence) end
 	end
 
+	if (CURR_SENTENCE == dummy + 1) then 
+		CURR_SENTENCE = 1 
+		TEXT_FEED = ""
+	end
+end
+
+function draw_sentence(text) 
 	dialog_t = dialog_t + 1
 	local x_pos = 120 - (DIALOG_LIMIT / 2) * 6
 	local y_pos = 120
 
     if (dialog_t % DIALOG_SPEED == 0) then
         dialog_index = dialog_index + 1
+	end
+
+	if (dialog_index == #text + TEXT_DELAY) then
+		CURR_SENTENCE = CURR_SENTENCE + 1
+		dialog_index = 0
 	end
 	
     for i = 1, dialog_index do
@@ -390,7 +405,7 @@ function draw()
 		draw_character(CURR_CLIENT)
 	end
 
-	draw_dialog_box(TEXT_FEED)
+	draw_dialog(TEXT_FEED)
 end
 
 function TIC()
