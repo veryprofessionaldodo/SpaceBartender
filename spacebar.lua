@@ -4,6 +4,8 @@
 -- script: lua
 
 IS_MENU = true
+HAS_FINISHED_WRITING = false
+CURR_EVENT = null
 
 bartender = {
 	anim_time = 0.8,
@@ -371,12 +373,16 @@ function handle_input()
             selection_state.is_selecting = false
 			selection_state.can_select = false
 			
-			update_state_machine(get_drink_state(selected_drink.base, selected_drink.reaction))
+			CURR_EVENT = get_drink_state(selected_drink.base, selected_drink.reaction)
+			-- Transition State
+			HAS_FINISHED_WRITING = false
+			update_state_machine(CURR_EVENT)
         end
     end
 end
 
 function draw_dialog(text)
+	print(HAS_FINISHED_WRITING)
 	local dummy = 0
 	for sentence in string.gmatch(text, "[^;]+") do
 		dummy = dummy + 1
@@ -386,6 +392,8 @@ function draw_dialog(text)
 	if (CURR_SENTENCE == dummy + 1) then 
 		CURR_SENTENCE = 1 
 		TEXT_FEED = ""
+		HAS_FINISHED_WRITING = true
+		update_state_machine(CURR_EVENT)
 	end
 end
 
@@ -395,7 +403,7 @@ function draw_sentence(text)
 	local y_pos = 120
 
     if (dialog_t % DIALOG_SPEED == 0) then
-        dialog_index = dialog_index + 1
+		dialog_index = dialog_index + 1
 	end
 
 	if (dialog_index == #text + TEXT_DELAY) then
@@ -411,7 +419,7 @@ function draw_sentence(text)
             if i >= j * DIALOG_LIMIT then line_i = DIALOG_LIMIT else line_i = i end
             print(text:sub(DIALOG_LIMIT * (j-1), line_i - 1), x_pos, y_pos + (j-1)*8)
         end
-    end
+	end
 end
 
 function update()
@@ -478,7 +486,13 @@ function update_state_machine(event)
 
 	if (CURR_STATE == CLIENT.ASTRONAUT.START) then
 		if (event == DRINKS.AGGRO.COURAGE) then 
-			CURR_STATE = ONE_NIGHT_STAND
+			CURR_CLIENT = characters.nothing
+			TEXT_FEED = "The Astronaut musks up the courage, and contacts the Alien's ship, asking if she would be interested in some stargazing and chill.;This is a test."
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = CLIENT.ALIEN.OFFENDED
+				HAS_FINISHED_WRITING = false
+				update_state_machine(null)
+			end
 		end
 
 		if (event == DRINKS.AGGRO.RATIONAL) then 
@@ -512,6 +526,12 @@ function update_state_machine(event)
 		end
 
 	elseif (CURR_STATE == CLIENT.ALIEN.OFFENDED) then
+		if (event == null) then
+			CURR_EVENT = 999
+			CURR_CLIENT = characters.alien
+			TEXT_FEED = "Everything was quiet, until a new customer burst into the bar;, addressing the bartender before she even reached the counter.;'Just give me a drink! Anything really!;Maybe then I'll know how to respond to those preposterous messages!;The nerve of some humans these days!'"
+		end
+		
 		if (event == DRINKS.AGGRO.COURAGE) then 
 			CURR_STATE = CLIENT.AI.ADVICE 
 			CURR_CLIENT = characters.ai
@@ -738,9 +758,7 @@ function update_state_machine(event)
 			CURR_STATE = ENDING.BATTLE_CC 
 		end
 	elseif (CURR_STATE == ONE_NIGHT_STAND) then
-		characters = characters.nothing
-		TEXT_FEED = "test test test tsest test setst ets test"
-		CURR_STATE = CLIENT.ALIEN.OFFENDED
+		
 	end
 end
 
