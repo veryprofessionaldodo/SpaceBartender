@@ -246,7 +246,9 @@ function set_variables()
     }
 
 	CURR_CLIENT = characters.astronaut
-    CURR_STATE = CLIENT.ASTRONAUT.START
+	CURR_STATE = CLIENT.ASTRONAUT.START
+	TEXT_FEED = "An astronaut enters the bar."
+	TEXT_FEED_OLD = TEXT_FEED
 end
 
 function init() 
@@ -297,19 +299,12 @@ function draw_alien()
 end
 
 function draw_character(character)
-	if character == characters.ai then
-		draw_ai()
-	end
-	
-	if character == characters.astronaut then
-		draw_astronaut()
-	end
-	
-	if character == characters.alien then  
-		draw_alien()
-	end
+	if character == characters.ai then draw_ai() end
+	if character == characters.astronaut then draw_astronaut() end
+	if character == characters.alien then draw_alien() end
 end
 
+-- Gets drink state from base and reagent type strings.
 function get_drink_state(base, reagent)
 	return string.upper(base) .. "_" .. string.upper(reagent)
 end
@@ -349,12 +344,19 @@ function handle_input()
     end
 end
 
-function draw_dialog_box(text)
-    dialog_t = dialog_t + 1
+function draw_dialog_box(text) 
+	if (text ~= TEXT_FEED_OLD) then 
+		dialog_index = 0 
+		TEXT_FEED_OLD = text
+	end
+
+	dialog_t = dialog_t + 1
+	local x_pos = 120 - (DIALOG_LIMIT / 2) * 6
+	local y_pos = 120
 
     if (dialog_t % DIALOG_SPEED == 0) then
         dialog_index = dialog_index + 1
-    end
+	end
 	
     for i = 1, dialog_index do
         local line = math.ceil(dialog_index / DIALOG_LIMIT)
@@ -362,7 +364,7 @@ function draw_dialog_box(text)
         for j = 1, line do
             local line_i
             if i >= j * DIALOG_LIMIT then line_i = DIALOG_LIMIT else line_i = i end
-            print(text:sub(DIALOG_LIMIT * (j-1), line_i), 0, j*8)
+            print(text:sub(DIALOG_LIMIT * (j-1), line_i - 1), x_pos, y_pos + (j-1)*8)
         end
     end
 end
@@ -384,12 +386,11 @@ function draw()
 	draw_bartender()
 	draw_counter()
 
-	
 	if not selection_state.is_selecting then
 		draw_character(CURR_CLIENT)
 	end
 
-	draw_dialog_box('asdf asdfasjdfasdo fasdfasdfasfawuefwuiefawe ww fuaweiufawuiefwae uifw efwui')
+	draw_dialog_box(TEXT_FEED)
 end
 
 function TIC()
@@ -414,6 +415,7 @@ function update_state_machine(event)
 		if (event == DRINKS.AGGRO.COURAGE) then 
 			CURR_STATE = CLIENT.ALIEN.OFFENDED
 			CURR_CLIENT = characters.alien
+			TEXT_FEED = "The alien should pop up and now she's offended."
 		end
 
 		if (event == DRINKS.AGGRO.RATIONAL) then 
