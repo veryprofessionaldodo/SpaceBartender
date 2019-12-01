@@ -22,7 +22,7 @@ function init()
     ENDING = {
         SABOTAGE = 100, THREAT = 101, CONFORMED = 102,
         BATTLE_CA = 103, BATTLE_AC = 104, BATTLE_CC = 105, BATTLE_AA = 106,
-        NOTHING = 107, MARRIED = 108, BARTENDER_QUITS = 109, LGBTQ = 110, GENOCIDE = 111
+        NOTHING = 107, MARRIED = 108, BARTENDER_QUITS = 109, LGBTQ = 110, GENOCIDE = 111, ALL_ALONE = 112
     }
 
     DRINKS = {
@@ -72,8 +72,8 @@ function update_state_machine(event)
         if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.GENOCIDE end
         if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.CONFORMED end
         if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.LGBTQ end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.CONFORMED end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.CONFORMED end
+        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.ALL_ALONE end
+        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.ALL_ALONE end
 
     elseif (CURR_STATE == CLIENT.CYBORG.SAD) then
         if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.ASTRONAUT.BATTLE end
