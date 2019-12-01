@@ -737,41 +737,10 @@ function update_state_machine(event)
 		if (event == DRINKS.CALM.APATHY) then 
 			CURR_STATE = ENDING.BATTLE_CC 
 		end
-	end
 	elseif (CURR_STATE == ONE_NIGHT_STAND) then
 		characters = characters.nothing
 		TEXT_FEED = "test test test tsest test setst ets test"
 		CURR_STATE = CLIENT.ALIEN.OFFENDED
-	end
-	elseif (CURR_STATE == MARRIAGE_PROPOSAL) then
-	end
-	elseif (CURR_STATE == DINNER_PROPOSAL) then
-	end
-	elseif (CURR_STATE == IMMA_DO_IT) then
-	end
-	elseif (CURR_STATE == ALIEN_IGNORES_ASS) then
-	end
-	elseif (CURR_STATE == ALIEN_NO) then
-	end
-	elseif (CURR_STATE == FATHER_DISAPPROVAL) then
-	end
-	elseif (CURR_STATE == NAKED_ALIEN) then
-	end
-	elseif (CURR_STATE == NICE_DINNER) then
-	end
-	elseif (CURR_STATE == AI_DINNER_PROPOSAL) then
-	end
-	elseif (CURR_STATE == AI_CONFORMANCE) then
-	end
-	elseif (CURR_STATE == AI_GENOCIDE) then
-	end
-	elseif (CURR_STATE == AI_THREATENS_ASS) then
-	end
-	elseif (CURR_STATE == AI_CONFORMANCE_RELATIONSHIP) then
-	end
-	elseif (CURR_STATE == AI_SABOTAGE) then
-	end
-	elseif (CURR_STATE == BATTLE_TO_THE_DEATH) then
 	end
 end
 
