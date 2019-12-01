@@ -32,18 +32,18 @@ counter = {
 }
 
 drink_types = { 
-		calm="calm",
-		aggro="aggro",
-		rational="rational", 
-		apathy="apathy",
-		courage="courage" 
+	calm="calm",
+	aggro="aggro",
+	rational="rational", 
+	apathy="apathy",
+	courage="courage" 
 }
 
 selected_drink = {
-		-- selected position in drink array
-		--pos = 0,
-		base = "",
-		reaction = ""
+	-- selected position in drink array
+	--pos = 0,
+	base = "",
+	reaction = ""
 }
 
 characters = {
@@ -52,6 +52,7 @@ characters = {
 	astronaut="astronaut"
 }
 
+-- Creates drinks and pushes them to the drinks array.
 function create_drinks()
 	calm = {
 		type = drink_types.calm,
@@ -240,10 +241,11 @@ function set_variables()
     }
 
     DRINKS = {
-        CALM = { APATHY = 0, COURAGE = 1, RATIONAL = 2 },
-        AGGRO = { APATHY = 3, COURAGE = 4, RATIONAL = 5 }
+        CALM = { APATHY = "CALM_APATHY", COURAGE = "CALM_COURAGE", RATIONAL = "CALM_RATIONAL" },
+        AGGRO = { APATHY = "AGGRO_APATHY", COURAGE = "AGGRO_COURAGE", RATIONAL = "AGGRO_RATIONAL" }
     }
 
+	CURR_CLIENT = characters.astronaut
     CURR_STATE = CLIENT.ASTRONAUT.START
 end
 
@@ -255,16 +257,13 @@ end
 
 init()
 
-function update_counter()
-
-end
-
 function draw_counter()
 	spr(34,10,90,0,2,0,0,8,2)
 	spr(34,180,90,0,2,0,0,8,2)
 	spr(34,70,90,0,2,0,0,8,2)
 end
 
+-- Draw clients.
 function draw_ai()
 	radius = 30
 	
@@ -295,8 +294,6 @@ end
 
 function draw_alien()
 	spr(389,0,10,0,2,0,0,7,9)
-	
-	
 end
 
 function draw_character(character)
@@ -311,6 +308,10 @@ function draw_character(character)
 	if character == characters.alien then  
 		draw_alien()
 	end
+end
+
+function get_drink_state(base, reagent)
+	return string.upper(base) .. "_" .. string.upper(reagent)
 end
 
 function handle_input()
@@ -341,31 +342,20 @@ function handle_input()
             selection_state.curr_selection = 1
             selection_state.stage = stages.base
             selection_state.is_selecting = false
-            selection_state.can_select = false
+			selection_state.can_select = false
+			
+			update_state_machine(get_drink_state(selected_drink.base, selected_drink.reaction))
         end
     end
-
 end
 
-function update()
-	update_background()
-	
-	update_bartender()
-	
-	if selection_state.is_selecting then
-		handle_input()
-	end
-	
-	ai_wave_counter = ai_wave_counter + 1 
-end
-
-function scroll_text(text)
+function draw_dialog_box(text)
     dialog_t = dialog_t + 1
 
     if (dialog_t % DIALOG_SPEED == 0) then
         dialog_index = dialog_index + 1
     end
-
+	
     for i = 1, dialog_index do
         local line = math.ceil(dialog_index / DIALOG_LIMIT)
 
@@ -377,20 +367,32 @@ function scroll_text(text)
     end
 end
 
+function update()
+	update_background()
+	update_bartender()
+	
+	if selection_state.is_selecting then
+		handle_input()
+	end
+	
+	ai_wave_counter = ai_wave_counter + 1 
+end
+
 function draw()
+	cls()
 	draw_background()
 	draw_bartender()
-	
 	draw_counter()
+
 	
 	if not selection_state.is_selecting then
-		draw_character(characters.alien)
+		draw_character(CURR_CLIENT)
 	end
+
+	draw_dialog_box('asdf asdfasjdfasdo fasdfasdfasfawuefwuiefawe ww fuaweiufawuiefwae uifw efwui')
 end
 
 function TIC()
-	cls()
-	
 	update()
 	
 	if btnp(4) and selection_state.can_select then
@@ -407,78 +409,250 @@ end
 -- State Machine
 
 function update_state_machine(event)
-    -- First astronaut interaction.
-    if (CURR_STATE == CLIENT.ASTRONAUT.START) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.ALIEN.OFFENDED end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = CLIENT.ALIEN.MARRIAGE end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.NOTHING end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = CLIENT.ALIEN.MARRIAGE end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.ALIEN.DINNER end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.NOTHING end
 
-    elseif (CURR_STATE == CLIENT.ALIEN.OFFENDED) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.AI.ADVICE end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = CLIENT.AI.ADVICE end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = CLIENT.AI.ADVICE end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = CLIENT.AI.SAD end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.AI.SAD end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = CLIENT.AI.ADVICE end
+	if (CURR_STATE == CLIENT.ASTRONAUT.START) then
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = CLIENT.ALIEN.OFFENDED
+			CURR_CLIENT = characters.alien
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = CLIENT.ALIEN.MARRIAGE
+			CURR_CLIENT = characters.alien 
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = ENDING.NOTHING 
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = CLIENT.ALIEN.MARRIAGE 
+			CURR_CLIENT = characters.alien
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = CLIENT.ALIEN.DINNER 
+			CURR_CLIENT = characters.alien
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = ENDING.NOTHING 
+		end
+
+	elseif (CURR_STATE == CLIENT.ALIEN.OFFENDED) then
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = CLIENT.AI.ADVICE 
+			CURR_CLIENT = characters.ai
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = CLIENT.AI.ADVICE
+			CURR_CLIENT = characters.ai
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = CLIENT.AI.ADVICE
+			CURR_CLIENT = characters.ai
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = CLIENT.AI.SAD
+			CURR_CLIENT = characters.ai 
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = CLIENT.AI.SAD
+			CURR_CLIENT = characters.ai
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = CLIENT.AI.ADVICE
+			CURR_CLIENT = characters.ai
+		end
 
     elseif (CURR_STATE == CLIENT.ALIEN.MARRIAGE) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = ENDING.MARRIED end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = CLIENT.AI.ADVICE end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = CLIENT.AI.ADVICE end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.MARRIED end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.AI.ADVICE end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = CLIENT.AI.ADVICE end
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = ENDING.MARRIED 
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = CLIENT.AI.ADVICE
+			CURR_CLIENT = characters.ai
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = CLIENT.AI.ADVICE
+			CURR_CLIENT = characters.ai 
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = ENDING.MARRIED 
+		end
+		
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = CLIENT.AI.ADVICE 
+			CURR_CLIENT = characters.ai
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = CLIENT.AI.ADVICE
+			CURR_CLIENT = characters.ai 
+		end
 
     elseif (CURR_STATE == CLIENT.ALIEN.DINNER) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.AI.ADVICE end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.BARTENDER_QUITS end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = CLIENT.AI.SAD end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = CLIENT.AI.SAD end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.AI.SAD end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = CLIENT.AI.SAD end
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = CLIENT.AI.ADVICE 
+			CURR_CLIENT = characters.ai
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = ENDING.BARTENDER_QUITS 
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = CLIENT.AI.SAD
+			CURR_CLIENT = characters.ai
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = CLIENT.AI.SAD
+			CURR_CLIENT = characters.ai 
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = CLIENT.AI.SAD
+			CURR_CLIENT = characters.ai 
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = CLIENT.AI.SAD
+			CURR_CLIENT = characters.ai 
+		end
 
     elseif (CURR_STATE == CLIENT.AI.ADVICE) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = ENDING.GENOCIDE end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.GENOCIDE end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.CONFORMED end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.LGBTQ end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.CONFORMED end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.CONFORMED end
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = ENDING.GENOCIDE 
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = ENDING.GENOCIDE 
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = ENDING.CONFORMED 
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = ENDING.LGBTQ 
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = ENDING.CONFORMED 
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = ENDING.CONFORMED 
+		end
 
     elseif (CURR_STATE == CLIENT.AI.SAD) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.ASTRONAUT.BATTLE end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.SABOTAGE end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.CONFORMED end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.THREAT end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.CONFORMED end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.CONFORMED end
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = CLIENT.ASTRONAUT.BATTLE 
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = ENDING.SABOTAGE 
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = ENDING.CONFORMED 
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = ENDING.THREAT 
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = ENDING.CONFORMED 
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = ENDING.CONFORMED 
+		end
 
     elseif (CURR_STATE == CLIENT.ASTRONAUT.BATTLE) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.AI.BATTLE_AGGRO end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = CLIENT.AI.BATTLE_AGGRO end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = CLIENT.AI.BATTLE_AGGRO end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = CLIENT.AI.BATTLE_CALM end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.AI.BATTLE_CALM end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = CLIENT.AI.BATTLE_CALM end
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = CLIENT.AI.BATTLE_AGGRO 
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = CLIENT.AI.BATTLE_AGGRO 
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = CLIENT.AI.BATTLE_AGGRO 
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = CLIENT.AI.BATTLE_CALM 
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = CLIENT.AI.BATTLE_CALM 
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = CLIENT.AI.BATTLE_CALM 
+		end
 
     elseif (CURR_STATE == CLIENT.AI.BATTLE_AGGRO) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = ENDING.BATTLE_AA end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.BATTLE_AA end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.BATTLE_AA end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.BATTLE_AC end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.BATTLE_AC end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.BATTLE_AC end
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = ENDING.BATTLE_AA 
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = ENDING.BATTLE_AA
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = ENDING.BATTLE_AA 
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = ENDING.BATTLE_AC 
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = ENDING.BATTLE_AC 
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = ENDING.BATTLE_AC 
+		end
 
     elseif (CURR_STATE == CLIENT.AI.BATTLE_CALM) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = ENDING.BATTLE_CA end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.BATTLE_CA end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.BATTLE_CA end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.BATTLE_CC end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.BATTLE_CC end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.BATTLE_CC end
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = ENDING.BATTLE_CA
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = ENDING.BATTLE_CA 
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = ENDING.BATTLE_CA 
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = ENDING.BATTLE_CC 
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = ENDING.BATTLE_CC 
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = ENDING.BATTLE_CC 
+		end
     end
 end
 
