@@ -3,6 +3,8 @@
 -- desc:   short description
 -- script: lua
 
+IS_MENU = true
+
 bartender = {
 	anim_time = 0.8,
 	anim_counter = 0,
@@ -55,63 +57,73 @@ characters = {
 -- Creates drinks and pushes them to the drinks array.
 function create_drinks()
 	calm = {
+		name = "Milky Way",
 		type = drink_types.calm,
-		x = 20,
-		y = 10,
+		color = 6,
+		x = 28,
+		y = 20,
 		offset_y = 0,
 		sprite = 2,
 		dir = 1,
 		anim_time = 30 + math.random(50),
 		anim_counter = math.random(20),
-		description = 'Wow, so calm'
+		description = 'Natural nerve soother'
 	}
 
 	aggro = {
+		name = "Molten Rage",
 		type = drink_types.aggro,
-		x = 70,
-		y = 10,
+		color = 7,
+		x = 66,
+		y = 20,
 		offset_y = 0,
 		sprite = 0,
 		dir = 1,
 		anim_time = 30 + math.random(50),
 		anim_counter = math.random(20),
-		description = 'Damn, so angery'
+		description = 'Brewed by Lucifer himself'
 	}  
 	
 	courage = {
+		name = "Taurus",
 		type = drink_types.courage,
+		color = 9,
 		x = 10,
-		y = 50,
+		y = 56,
 		offset_y = 0,
 		sprite = 6,
 		dir = 1,
 		anim_time = 30 + math.random(50),
 		anim_counter = math.random(20),
-		description = 'Wow, much courage'
+		description = 'Liquid courage'
 	}
 	
-	apathy  = {
- 	type = drink_types.apathy,
+	apathy = {
+		name = "Anesthesia",
+	 	type = drink_types.apathy,
+		color = 10,
 		x = 47,
-		y = 50,
+		y = 56,
 		sprite = 4,
 		dir = 1,
 		offset_y = 0,
 		anim_time = 30 + math.random(50),
 		anim_counter = math.random(20),
-		description = 'idgaf'
+		description = '...'
 	}
 	
 	rational = {
+		name = "Cerberus",
 		type = drink_types.rational,
+		color = 12,
 		x = 85,
-		y = 50,
+		y = 56,
 		sprite = 8,
 		offset_y = 0,
 		anim_time = 30 + math.random(50),
 		anim_counter = math.random(20),
 		dir = 1,
-		description = 'Big brain time'
+		description = 'Brain juice'
 	}
 
     table.insert(drinks,calm)
@@ -155,12 +167,18 @@ function update_drinks()
 	end
 end
 
+function draw_drink_label(index)
+	print(string.upper(drinks[index].name), 0, 0, drinks[index].color)
+	print(drinks[index].description, 3, 5)
+end
+
 function draw_drinks()
     for i = 1, #drinks do 
         spr(drinks[i].sprite, drinks[i].x, drinks[i].y+drinks[i].offset_y,0,2,0,0,2,2)
         if selection_state.is_selecting then 
             if selection_state.curr_selection == i then 
-                spr(64,drinks[i].x,drinks[i].y,0,2,0,0,2,2)
+				spr(64,drinks[i].x,drinks[i].y,0,2,0,0,2,2)
+				draw_drink_label(i)	
             else 
                 spr(32,drinks[i].x,drinks[i].y,0,2,0,0,2,2)
             end
@@ -212,9 +230,13 @@ function update_bartender()
 end
 
 function draw_bartender()
-	anim_id = 256 + 112*bartender.anim_frame
-	
-	spr(anim_id,120,10,0,2,0,0,5,7)
+	anim_id = 256 + 112 * bartender.anim_frame
+	spr(anim_id, 120, 10, 0, 2, 0, 0, 5, 7)
+end
+
+function draw_specific_bartender(pos_x, pos_y)
+	anim_id = 256 + 112 * bartender.anim_frame
+	spr(anim_id, pos_x, pos_y, 0, 2, 0, 0, 5, 7)
 end
 
 function set_variables()
@@ -385,6 +407,12 @@ function draw_sentence(text)
 end
 
 function update()
+	if (IS_MENU) then 
+		if btnp(4) or btnp(5) or btnp(6) or btnp(7) then 
+			IS_MENU = false 
+		end 
+	end
+
 	update_background()
 	update_bartender()
 	
@@ -395,8 +423,22 @@ function update()
 	ai_wave_counter = ai_wave_counter + 1 
 end
 
+function draw_menu()
+	draw_stars()
+	print('SPACEBAR', 30, 30, 7, false, 4, false)
+	print('Also try Terraria!', 30, 52, 15, false, 1, true)
+	draw_specific_bartender(150, 46)
+	print('Press any key to start...', 30, 130, 7, false, 1, true)
+end
+
 function draw()
 	cls()
+	
+	if (IS_MENU) then
+		draw_menu()
+		return
+	end
+
 	draw_background()
 	draw_bartender()
 	draw_counter()
