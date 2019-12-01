@@ -3,6 +3,10 @@
 -- desc:   short description
 -- script: lua
 
+IS_MENU = true
+HAS_FINISHED_WRITING = false
+CURR_EVENT = null
+
 bartender = {
 	anim_time = 0.8,
 	anim_counter = 0,
@@ -32,85 +36,107 @@ counter = {
 }
 
 drink_types = { 
-		calm="calm",
-		aggro="aggro",
-		rational="rational", 
-		apathy="apathy",
-		courage="courage" 
+	calm="calm",
+	aggro="aggro",
+	rational="rational", 
+	apathy="apathy",
+	courage="courage" 
 }
 
 selected_drink = {
-		-- selected position in drink array
-		--pos = 0,
-		base = "",
-		reaction = ""
+	-- selected position in drink array
+	--pos = 0,
+	base = "",
+	reaction = ""
 }
 
 characters = {
 	ai="ai",
 	alien="alien",
-	astronaut="astronaut"
+	astronaut="astronaut",
+	nothing="nothing"
 }
 
+slide = {
+	speed = 0.8,
+	position = 0,
+	value = 0,
+	min_x = -300,
+	x = -300,
+	y = 0,
+	max_x = 10
+}
+
+-- Creates drinks and pushes them to the drinks array.
 function create_drinks()
 	calm = {
+		name = "Milky Way",
 		type = drink_types.calm,
-		x = 20,
-		y = 10,
+		color = 6,
+		x = 28,
+		y = 20,
 		offset_y = 0,
 		sprite = 2,
 		dir = 1,
 		anim_time = 30 + math.random(50),
 		anim_counter = math.random(20),
-		description = 'Wow, so calm'
+		description = 'Natural nerve soother'
 	}
 
 	aggro = {
+		name = "Molten Rage",
 		type = drink_types.aggro,
-		x = 70,
-		y = 10,
+		color = 7,
+		x = 66,
+		y = 20,
 		offset_y = 0,
 		sprite = 0,
 		dir = 1,
 		anim_time = 30 + math.random(50),
 		anim_counter = math.random(20),
-		description = 'Damn, so angery'
+		description = 'Brewed by Lucifer himself'
 	}  
 	
 	courage = {
+		name = "Taurus",
 		type = drink_types.courage,
+		color = 9,
 		x = 10,
-		y = 50,
+		y = 56,
 		offset_y = 0,
 		sprite = 6,
 		dir = 1,
 		anim_time = 30 + math.random(50),
 		anim_counter = math.random(20),
-		description = 'Wow, much courage'
+		description = 'Liquid courage'
 	}
 	
-	apathy  = {
- 	type = drink_types.apathy,
+	apathy = {
+		name = "Anesthesia",
+	 	type = drink_types.apathy,
+		color = 10,
 		x = 47,
-		y = 50,
+		y = 56,
 		sprite = 4,
 		dir = 1,
 		offset_y = 0,
 		anim_time = 30 + math.random(50),
 		anim_counter = math.random(20),
-		description = 'idgaf'
+		description = '...'
 	}
 	
 	rational = {
+		name = "Cerberus",
 		type = drink_types.rational,
+		color = 12,
 		x = 85,
-		y = 50,
+		y = 56,
 		sprite = 8,
 		offset_y = 0,
 		anim_time = 30 + math.random(50),
 		anim_counter = math.random(20),
 		dir = 1,
-		description = 'Big brain time'
+		description = 'Brain juice'
 	}
 
     table.insert(drinks,calm)
@@ -119,6 +145,17 @@ function create_drinks()
 	table.insert(drinks,apathy)
 	table.insert(drinks,rational)
 	
+end
+
+function update_drinks()
+	for i = 1, #drinks do 
+		drinks[i].anim_counter = drinks[i].anim_counter + 1/3
+		if drinks[i].anim_counter > drinks[i].anim_time then
+			drinks[i].anim_counter = 0
+			drinks[i].offset_y = drinks[i].dir
+			drinks[i].dir = -drinks[i].dir
+		end
+	end
 end
 
 function create_stars() 
@@ -143,15 +180,9 @@ function update_stars()
 	end
 end
 
-function update_drinks()
-	for i = 1, #drinks do 
-		drinks[i].anim_counter = drinks[i].anim_counter + 1/3
-		if drinks[i].anim_counter > drinks[i].anim_time then
-			drinks[i].anim_counter = 0
-			drinks[i].offset_y = drinks[i].dir
-			drinks[i].dir = -drinks[i].dir
-		end
-	end
+function draw_drink_label(index)
+	print(string.upper(drinks[index].name), 0, 0, drinks[index].color)
+	print(drinks[index].description, 3, 5)
 end
 
 function draw_drinks()
@@ -159,7 +190,8 @@ function draw_drinks()
         spr(drinks[i].sprite, drinks[i].x, drinks[i].y+drinks[i].offset_y,0,2,0,0,2,2)
         if selection_state.is_selecting then 
             if selection_state.curr_selection == i then 
-                spr(64,drinks[i].x,drinks[i].y,0,2,0,0,2,2)
+				spr(64,drinks[i].x,drinks[i].y,0,2,0,0,2,2)
+				draw_drink_label(i)	
             else 
                 spr(32,drinks[i].x,drinks[i].y,0,2,0,0,2,2)
             end
@@ -211,9 +243,13 @@ function update_bartender()
 end
 
 function draw_bartender()
-	anim_id = 256 + 112*bartender.anim_frame
-	
-	spr(anim_id,120,10,0,2,0,0,5,7)
+	anim_id = 256 + 112 * bartender.anim_frame
+	spr(anim_id, 120, 10, 0, 2, 0, 0, 5, 7)
+end
+
+function draw_specific_bartender(pos_x, pos_y)
+	anim_id = 256 + 112 * bartender.anim_frame
+	spr(anim_id, pos_x, pos_y, 0, 2, 0, 0, 5, 7)
 end
 
 function set_variables()
@@ -224,7 +260,7 @@ function set_variables()
 	dialog_index = 0
 
 	DIALOG_SPEED = 4
-	DIALOG_LIMIT = 25
+	DIALOG_LIMIT = 35
 
 	CLIENT = {
         ASTRONAUT = { START = 00, BATTLE = 01 },
@@ -240,11 +276,28 @@ function set_variables()
     }
 
     DRINKS = {
-        CALM = { APATHY = 0, COURAGE = 1, RATIONAL = 2 },
-        AGGRO = { APATHY = 3, COURAGE = 4, RATIONAL = 5 }
-    }
+        CALM = { APATHY = "CALM_APATHY", COURAGE = "CALM_COURAGE", RATIONAL = "CALM_RATIONAL" },
+        AGGRO = { APATHY = "AGGRO_APATHY", COURAGE = "AGGRO_COURAGE", RATIONAL = "AGGRO_RATIONAL" }
+	}
+	
+	TRANSITIONS = {
+		ONE_NIGHT_STAND = 30, MARRIAGE_PROPOSAL = 31, DINNER_PROPOSAL = 32, IMMA_DO_IT = 33, ALIEN_IGNORES_ASS = 34, ALIEN_NO = 35,
+		FATHER_DISAPPROVAL = 36, NAKED_ALIEN = 37, NICE_DINNER = 38, AI_DINNER_PROPOSAL = 39, AI_CONFORMANCE = 40, AI_GENOCIDE = 41,
+		AI_THREATENS_ASS = 42, AI_CONFORMANCE_RELATIONSHIP = 43, AI_SABOTAGE = 44, BATTLE_TO_THE_DEATH = 45  
+	}
 
-    CURR_STATE = CLIENT.ASTRONAUT.START
+	CURR_CLIENT = characters.astronaut
+	CURR_STATE = CLIENT.ASTRONAUT.START
+	TEXT_FEED = "Hey man, what's up?"--";Bartender: ---;I see... You seem like a good listener;Can I tell you something that's been on my mind?;Bartender: ---;Alright, great! So, here goes.;I was working today and I glimpsed at a passing ship;where I saw such a sweet lookin'  Alien… A real cutie!;Not gonna lie, I'm tempted to break protocol and relay a message;Tell her how I feel, you know?;It can get awful lonely up in space..."
+	TEXT_FEED_OLD = TEXT_FEED
+	TEXT_DELAY = 15
+	CURR_SENTENCE = 1
+end
+
+function draw_counter()
+	spr(34,10,100,0,2,0,0,8,2)
+	spr(34,180,100,0,2,0,0,8,2)
+	spr(34,70,100,0,2,0,0,8,2)
 end
 
 function init() 
@@ -253,64 +306,82 @@ function init()
 	set_variables()
 end
 
-init()
-
-function update_counter()
-
+function change_character(character)
+	CURR_CLIENT = character
+	slide_character_in(character)
 end
 
-function draw_counter()
-	spr(34,10,90,0,2,0,0,8,2)
-	spr(34,180,90,0,2,0,0,8,2)
-	spr(34,70,90,0,2,0,0,8,2)
+function slide_character_in(character) 
+	slide.speed = math.abs(slide.speed)
+	slide.x = slide.min_x
+	slide.position = 0
+	slide.value = 0
+	if character == characters.ai then 
+		slide.y = 90
+		slide.max_x = 50
+	else 
+		slide.max_x = 10
+	end
 end
 
+function slide_character_out() 
+	slide.speed = -math.abs(slide.speed)
+end
+
+-- Draw clients.
 function draw_ai()
 	radius = 30
 	
 	for i = 1, 400 do
 		pix(
-		50+math.cos(i)*radius+math.sin(ai_wave_counter/60+i)*5 + math.sin(ai_wave_counter/60+i),
-		90+math.sin(i)*radius+math.cos(ai_wave_counter/50+i) + math.cos(ai_wave_counter/60+i),7)
+		slide.x+math.cos(i)*radius+math.sin(ai_wave_counter/60+i)*5 + math.sin(ai_wave_counter/60+i),
+		slide.y+math.sin(i)*radius+math.cos(ai_wave_counter/50+i) + math.cos(ai_wave_counter/60+i),7)
 	end
 	
 	radius = 4*math.sin(ai_wave_counter/30)-2*math.sin(ai_wave_counter/30*5)
 	radius = math.abs(radius) + 3
 	
-	circ(50,90,radius, 7)
+	circ(slide.x,slide.y,radius, 7)
 	
 	radius = 17
 	
 	for i = 1, 400 do
 		pix(
-		50+math.cos(i)*radius+math.sin(ai_wave_counter/20+i*4),
-		90+math.sin(i)*radius+math.cos(ai_wave_counter/20+i*4),15)
+		slide.x+math.cos(i)*radius+math.sin(ai_wave_counter/20+i*4),
+		slide.y+math.sin(i)*radius+math.cos(ai_wave_counter/20+i*4),15)
 	end
 	
 end
 
 function draw_astronaut()
-	spr(261,0,10,0,2,0,0,7,9)
+	spr(261,slide.x,10,0,2,0,0,7,9)
 end
 
 function draw_alien()
-	spr(389,0,10,0,2,0,0,7,9)
-	
-	
+	spr(389,slide.x,10,0,2,0,0,7,9)
 end
 
 function draw_character(character)
-	if character == characters.ai then
-		draw_ai()
+	-- fα(x)=xαxα+(1−x)α
+	if slide.speed < 0 and slide.position > 0 then 
+		slide.position = slide.position + slide.speed / 60
+	elseif slide.speed > 0 and slide.position < 1 then 
+		slide.position = slide.position + slide.speed / 60
 	end
-	
-	if character == characters.astronaut then
-		draw_astronaut()
-	end
-	
-	if character == characters.alien then  
-		draw_alien()
-	end
+
+	slide.value = math.pow(slide.position,2)/(math.pow(slide.position,2) + math.pow(1-slide.position, 2))
+	 
+	slide.x = slide.min_x + slide.value * (slide.max_x - slide.min_x)
+
+	if character == characters.ai then draw_ai() end
+	if character == characters.astronaut then draw_astronaut() end
+	if character == characters.alien then draw_alien() end
+	if character == characters.nothing then end
+end
+
+-- Gets drink state from base and reagent type strings.
+function get_drink_state(base, reagent)
+	return string.upper(base) .. "_" .. string.upper(reagent)
 end
 
 function handle_input()
@@ -341,15 +412,66 @@ function handle_input()
             selection_state.curr_selection = 1
             selection_state.stage = stages.base
             selection_state.is_selecting = false
-            selection_state.can_select = false
+			selection_state.can_select = false
+			
+			slide_character_in(CURR_CLIENT)
+			
+			CURR_EVENT = get_drink_state(selected_drink.base, selected_drink.reaction)
+			-- Transition State
+			HAS_FINISHED_WRITING = false
+			update_state_machine(CURR_EVENT)
         end
     end
+end
 
+function draw_dialog(text)
+	local dummy = 0
+	for sentence in string.gmatch(text, "[^;]+") do
+		dummy = dummy + 1
+		if (dummy == CURR_SENTENCE) then draw_sentence(sentence) end
+	end
+
+	if (CURR_SENTENCE == dummy + 1) then 
+		CURR_SENTENCE = 1 
+		TEXT_FEED = ""
+		HAS_FINISHED_WRITING = true
+		update_state_machine(CURR_EVENT)
+	end
+end
+
+function draw_sentence(text) 
+	dialog_t = dialog_t + 1
+	local x_pos = 120 - (DIALOG_LIMIT / 2) * 6
+	local y_pos = 120
+
+    if (dialog_t % DIALOG_SPEED == 0) then
+		dialog_index = dialog_index + 1
+	end
+
+	if (dialog_index == #text + TEXT_DELAY) then
+		CURR_SENTENCE = CURR_SENTENCE + 1
+		dialog_index = 0
+	end
+	
+    for i = 1, dialog_index do
+        local line = math.ceil(dialog_index / DIALOG_LIMIT)
+
+        for j = 1, line do
+            local line_i
+            if i >= j * DIALOG_LIMIT then line_i = DIALOG_LIMIT else line_i = i end
+            print(text:sub(DIALOG_LIMIT * (j-1), line_i - 1), x_pos, y_pos + (j-1)*8)
+        end
+	end
 end
 
 function update()
+	if (IS_MENU) then 
+		if btnp(4) or btnp(5) or btnp(6) or btnp(7) then 
+			IS_MENU = false 
+		end 
+	end
+
 	update_background()
-	
 	update_bartender()
 	
 	if selection_state.is_selecting then
@@ -359,38 +481,38 @@ function update()
 	ai_wave_counter = ai_wave_counter + 1 
 end
 
-function scroll_text(text)
-    dialog_t = dialog_t + 1
-
-    if (dialog_t % DIALOG_SPEED == 0) then
-        dialog_index = dialog_index + 1
-    end
-
-    for i = 1, dialog_index do
-        local line = math.ceil(dialog_index / DIALOG_LIMIT)
-
-        for j = 1, line do
-            local line_i
-            if i >= j * DIALOG_LIMIT then line_i = DIALOG_LIMIT else line_i = i end
-            print(text:sub(DIALOG_LIMIT * (j-1), line_i), 0, j*8)
-        end
-    end
+function draw_menu()
+	draw_stars()
+	print('SPACEBAR', 30, 30, 7, false, 4, false)
+	print('Also try Terraria!', 30, 52, 15, false, 1, true)
+	draw_specific_bartender(150, 46)
+	print('Press any key to start...', 30, 130, 7, false, 1, true)
 end
 
 function draw()
-	draw_background()
-	draw_bartender()
-	
-	draw_counter()
-	
-	if not selection_state.is_selecting then
-		draw_character(characters.alien)
-	end
-end
-
-function TIC()
 	cls()
 	
+	if (IS_MENU) then
+		draw_menu()
+		return
+	end
+
+	draw_background()
+	draw_bartender()
+	draw_counter()
+
+	if selection_state.is_selecting then
+		slide_character_out()
+	end
+
+	draw_character(CURR_CLIENT)
+
+	draw_dialog(TEXT_FEED)
+end
+
+init()
+
+function TIC()
 	update()
 	
 	if btnp(4) and selection_state.can_select then
@@ -407,78 +529,282 @@ end
 -- State Machine
 
 function update_state_machine(event)
-    -- First astronaut interaction.
-    if (CURR_STATE == CLIENT.ASTRONAUT.START) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.ALIEN.OFFENDED end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = CLIENT.ALIEN.MARRIAGE end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.NOTHING end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = CLIENT.ALIEN.MARRIAGE end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.ALIEN.DINNER end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.NOTHING end
 
-    elseif (CURR_STATE == CLIENT.ALIEN.OFFENDED) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.AI.ADVICE end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = CLIENT.AI.ADVICE end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = CLIENT.AI.ADVICE end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = CLIENT.AI.SAD end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.AI.SAD end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = CLIENT.AI.ADVICE end
+	if (CURR_STATE == CLIENT.ASTRONAUT.START) then
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_CLIENT = characters.nothing
+			TEXT_FEED = "The Astronaut musks up the courage, and contacts the Alien's ship, asking if she would be interested in some stargazing and chill.;This is a test."
+			if HAS_FINISHED_WRITING then
+				CURR_STATE = CLIENT.ALIEN.OFFENDED
+				HAS_FINISHED_WRITING = false
+				update_state_machine(null)
+			end
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = CLIENT.ALIEN.MARRIAGE
+			change_character(characters.alien)
+			TEXT_FEED = "A new customer approaches, mumbling something to herself. ;She clearly looks frustrated.;'Greetings', she says, quietly, but politely.;Something was troubling her.;Fortunately for her...;The bartender is trained to understand the customer's deepest desire"
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = ENDING.NOTHING 
+			change_character(characters.nothing)
+			TEXT_FEED = "The astronaut realized relationships are stupid.;And then literally nothing happened.;The end?"
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = CLIENT.ALIEN.MARRIAGE 
+			change_character(characters.alien)
+			TEXT_FEED = "The astronaut realized relationships are stupid.;And then literally nothing happened.;The end?"
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = CLIENT.ALIEN.DINNER 
+			change_character(characters.alien)
+			TEXT_FEED = "'Oh, great, a human! You'll probably be able to answer me!;I'm going on a date with an Astronaut, and I'm a bit stumped...;What do you think I should wear?;The last thing I want is to make a fool of myself!';She sits in a bar stool.;'And serve me a drink, while you're at it;Consider it as a payment for the advice!''"
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = ENDING.NOTHING 
+			change_character(characters.nothing)
+			TEXT_FEED = "The astronaut realized relationships are stupid.;And then literally nothing happened.;The end?"
+		end
+
+	elseif (CURR_STATE == CLIENT.ALIEN.OFFENDED) then
+		if (event == null) then
+			CURR_EVENT = 999
+			change_character(characters.alien)
+			TEXT_FEED = "Everything was quiet, until a new customer burst into the bar;, addressing the bartender before she even reached the counter.;'Just give me a drink! Anything really!;Maybe then I'll know how to respond to those preposterous messages!;The nerve of some humans these days!'"
+		end
+		
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = CLIENT.AI.ADVICE 
+			change_character(characters.ai)
+			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = CLIENT.AI.ADVICE
+			change_character(characters.ai)
+			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = CLIENT.AI.ADVICE
+			change_character(characters.ai)
+			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then
+			CURR_STATE = CLIENT.AI.SAD
+			change_character(characters.ai)
+			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that you are the best decision-maker in the galaxy.;You will certainly be able to give me the best path;that would solve my dilemma.;Alien has been frequently engaging with an Astronaut.;I'm worried that it will affect her performance.;Or even worse, that she would deem me less useful.;What should be my course of action?"
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = CLIENT.AI.SAD
+			change_character(characters.ai)
+			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that you are the best decision-maker in the galaxy.;You will certainly be able to give me the best path;that would solve my dilemma.;Alien has been frequently engaging with an Astronaut.;I'm worried that it will affect her performance.;Or even worse, that she would deem me less useful.;What should be my course of action?"
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = CLIENT.AI.ADVICE
+			change_character(characters.ai)
+			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
+		end
 
     elseif (CURR_STATE == CLIENT.ALIEN.MARRIAGE) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = ENDING.MARRIED end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = CLIENT.AI.ADVICE end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = CLIENT.AI.ADVICE end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.MARRIED end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.AI.ADVICE end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = CLIENT.AI.ADVICE end
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = ENDING.MARRIED 
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = CLIENT.AI.ADVICE
+			change_character(characters.ai)
+			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = CLIENT.AI.ADVICE
+			change_character(characters.ai)
+			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = ENDING.MARRIED 
+		end
+		
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = CLIENT.AI.ADVICE 
+			change_character(characters.ai)
+			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = CLIENT.AI.ADVICE
+			change_character(characters.ai)
+			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
+		end
 
     elseif (CURR_STATE == CLIENT.ALIEN.DINNER) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.AI.ADVICE end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.BARTENDER_QUITS end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = CLIENT.AI.SAD end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = CLIENT.AI.SAD end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.AI.SAD end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = CLIENT.AI.SAD end
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = CLIENT.AI.ADVICE 
+			change_character(characters.ai)
+			TEXT_FEED = "A mysterious form of energy drifts into the bar.;To the surprise of the bartender, it talked.;'Greetings, human.;My data tells me that Alien has been here recently.;You have aided her in a problem;My sensors tell me your solution was rather satisfactory.;I have determined that you would be able to advise me; in a dilemma of my own.;I have traveled with said Alien for exactly...;3 years, 5 months, 2 days and 12 hours.; During this time, I have gained some interest in discovering;what love is and why it matters so much to her.;Would you have any solution?'"
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = ENDING.BARTENDER_QUITS 
+			TEXT_FEED = "The alien shows up in revealing clothes. The bartender stops cleaning his glass for once. “Mmfamrmmfm”. The alien doesn’t understand a single word but is strangely attracted.They exit the bar together."
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = CLIENT.AI.SAD
+			change_character(characters.ai)
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = CLIENT.AI.SAD
+			change_character(characters.ai)
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = CLIENT.AI.SAD
+			change_character(characters.ai)
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = CLIENT.AI.SAD
+			change_character(characters.ai)
+		end
 
     elseif (CURR_STATE == CLIENT.AI.ADVICE) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = ENDING.GENOCIDE end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.GENOCIDE end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.CONFORMED end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.LGBTQ end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.CONFORMED end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.CONFORMED end
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = ENDING.GENOCIDE 
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = ENDING.GENOCIDE 
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = ENDING.CONFORMED 
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = ENDING.LGBTQ 
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = ENDING.CONFORMED 
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = ENDING.CONFORMED 
+		end
 
     elseif (CURR_STATE == CLIENT.AI.SAD) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.ASTRONAUT.BATTLE end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.SABOTAGE end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.CONFORMED end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.THREAT end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.CONFORMED end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.CONFORMED end
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = CLIENT.ASTRONAUT.BATTLE 
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = ENDING.SABOTAGE 
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = ENDING.CONFORMED 
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = ENDING.THREAT 
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = ENDING.CONFORMED 
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = ENDING.CONFORMED 
+		end
 
     elseif (CURR_STATE == CLIENT.ASTRONAUT.BATTLE) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = CLIENT.AI.BATTLE_AGGRO end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = CLIENT.AI.BATTLE_AGGRO end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = CLIENT.AI.BATTLE_AGGRO end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = CLIENT.AI.BATTLE_CALM end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = CLIENT.AI.BATTLE_CALM end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = CLIENT.AI.BATTLE_CALM end
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = CLIENT.AI.BATTLE_AGGRO 
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = CLIENT.AI.BATTLE_AGGRO 
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = CLIENT.AI.BATTLE_AGGRO 
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = CLIENT.AI.BATTLE_CALM 
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = CLIENT.AI.BATTLE_CALM 
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = CLIENT.AI.BATTLE_CALM 
+		end
 
     elseif (CURR_STATE == CLIENT.AI.BATTLE_AGGRO) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = ENDING.BATTLE_AA end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.BATTLE_AA end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.BATTLE_AA end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.BATTLE_AC end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.BATTLE_AC end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.BATTLE_AC end
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = ENDING.BATTLE_AA 
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = ENDING.BATTLE_AA
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = ENDING.BATTLE_AA 
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = ENDING.BATTLE_AC 
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = ENDING.BATTLE_AC 
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = ENDING.BATTLE_AC 
+		end
 
     elseif (CURR_STATE == CLIENT.AI.BATTLE_CALM) then
-        if (event == DRINKS.AGGRO.COURAGE) then CURR_STATE = ENDING.BATTLE_CA end
-        if (event == DRINKS.AGGRO.RATIONAL) then CURR_STATE = ENDING.BATTLE_CA end
-        if (event == DRINKS.AGGRO.APATHY) then CURR_STATE = ENDING.BATTLE_CA end
-        if (event == DRINKS.CALM.COURAGE) then CURR_STATE = ENDING.BATTLE_CC end
-        if (event == DRINKS.CALM.RATIONAL) then CURR_STATE = ENDING.BATTLE_CC end
-        if (event == DRINKS.CALM.APATHY) then CURR_STATE = ENDING.BATTLE_CC end
-    end
+		if (event == DRINKS.AGGRO.COURAGE) then 
+			CURR_STATE = ENDING.BATTLE_CA
+		end
+
+		if (event == DRINKS.AGGRO.RATIONAL) then 
+			CURR_STATE = ENDING.BATTLE_CA 
+		end
+
+		if (event == DRINKS.AGGRO.APATHY) then 
+			CURR_STATE = ENDING.BATTLE_CA 
+		end
+
+		if (event == DRINKS.CALM.COURAGE) then 
+			CURR_STATE = ENDING.BATTLE_CC 
+		end
+
+		if (event == DRINKS.CALM.RATIONAL) then 
+			CURR_STATE = ENDING.BATTLE_CC 
+		end
+
+		if (event == DRINKS.CALM.APATHY) then 
+			CURR_STATE = ENDING.BATTLE_CC 
+		end
+	elseif (CURR_STATE == ONE_NIGHT_STAND) then
+		
+	end
 end
 
